@@ -16,9 +16,34 @@ namespace CitrixSessionDumper
             // === Run PoweerShell to get Citrix session info ===
             string clientIP = "Not Found";
 
-            using(PowerShell ps = PowerShell.Create()) 
+            using (PowerShell ps = PowerShell.Create())
             {
+                // This command pulls the client IP of the current user session
+                ps.AddScript($@"
+                    $session = Get-BrokerSession -SessionState Active | Where-Object {{ $_.UserName -like '*{username}' }}
+                    if ($session) 
+                    {{
+                        $session.ClientIPAddress
+                    }}
+                    else 
+                    {{
+                        'No active Citrix session found'
+                    }}
+                ");
 
+                try 
+                {
+                    Collection<PSObject> results = ps.Invoke();
+
+                    if (results.Count > 0)
+                    {
+                        clientIP = results[0].ToString();
+                    }
+                }
+                catch (Exception ex) 
+                {
+                    clientIP = "Error: " + ex.Message;
+                }
             }
         }
     }
