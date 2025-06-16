@@ -44,6 +44,31 @@ namespace CitrixSessionDumper
                 {
                     clientIP = "Error: " + ex.Message;
                 }
+
+                // === Output to console and log file ===
+                Console.WriteLine("==== SESSION INFO ====");
+                Console.WriteLine($"Timestamp: {timestamp}");
+                Console.WriteLine($"Username: {username}");
+                Console.WriteLine($"Domain: {domain}");
+                Console.WriteLine($"Machine: {machine}");
+                Console.WriteLine($"Client IP: {clientIP}");
+                Console.WriteLine("======================");
+
+                // Log it to file
+                string logPath = @"C:\Logs\CitrixSessionDump.txt";
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+
+                using (StreamWriter writer = new StreamWriter(logPath, true))
+                {
+                    writer.WriteLine("==== SESSION INFO ====");
+                    writer.WriteLine($"Timestamp: {timestamp}");
+                    writer.WriteLine($"Username: {username}");
+                    writer.WriteLine($"Domain: {domain}");
+                    writer.WriteLine($"Machine: {machine}");
+                    writer.WriteLine($"Client IP: {clientIP}");
+                    writer.WriteLine("======================");
+                    writer.WriteLine();
+                }
             }
         }
     }
