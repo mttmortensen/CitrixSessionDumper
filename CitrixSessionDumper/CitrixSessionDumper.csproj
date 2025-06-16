@@ -7,4 +7,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Management.Automation">
+      <HintPath>..\..\..\..\..\..\Program Files\WindowsPowerShell\Modules\MSOnline\1.1.183.66\System.Management.Automation.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

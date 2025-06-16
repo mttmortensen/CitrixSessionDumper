@@ -1,4 +1,8 @@
-﻿namespace CitrixSessionDumper
+﻿using System;
+using System.IO;
+using System.Management.Automation;
+using System.Collections.ObjectModel;
+namespace CitrixSessionDumper
 {
     internal class Program
     {
@@ -8,6 +12,14 @@
             string username = Environment.UserName;
             string domain = Environment.UserDomainName;
             string machine = Environment.MachineName;
+
+            // === Run PoweerShell to get Citrix session info ===
+            string clientIP = "Not Found";
+
+            using(PowerShell ps = PowerShell.Create()) 
+            {
+
+            }
         }
     }
 }
