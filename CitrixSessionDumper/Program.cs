@@ -58,6 +58,7 @@ namespace CitrixSessionDumper
 
             using (StreamWriter writer = new StreamWriter(logPath, true))
             {
+                writer.WriteLine($"==========={username}'s Info===========");
                 writer.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
                 writer.WriteLine(GetProcessAndSystemInfo());
                 writer.WriteLine(GetGPODump());
