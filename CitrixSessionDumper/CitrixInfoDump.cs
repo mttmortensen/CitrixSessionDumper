@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -166,6 +167,63 @@ namespace CitrixSessionDumper
             }
 
             return sb.ToString();
+        }
+
+        public static GPOGroupResult GetGPOGroupResults() 
+        {
+            GPOGroupResult result = new GPOGroupResult();
+
+            // Step 1: Run gpresult and extract applied GPO names
+            string gpresult = RunCommand("gpresult", "/scope:user /v");
+            List<string> appliedGpos = new List<string>();
+            foreach (var line in gpresult.Split('\n')) 
+            {
+                if (line.Trim().StartsWith("Applied Group Policy Objects", StringComparison.OrdinalIgnoreCase))
+                    continue; 
+
+                if (line.Trim().StartsWith("    "))
+                    appliedGpos.Add(line.Trim());
+            }
+
+            // Step 2: Get Domain GPOs via PowerShell
+            HashSet<string> domainGops = new HashSet<string>();
+            using (PowerShell ps = PowerShell.Create()) 
+            {
+                ps.AddScript("Get-GPO -All | Select-Object -ExpandProperty DisplayName");
+                foreach (var gpo in ps.Invoke())
+                    domainGops.Add(gpo.ToString());
+            }
+
+            // Step 3: Compare and group them 
+            foreach (var gpo in appliedGpos) 
+            {
+                if (domainGops.Contains(gpo))
+                    result.ActiveGPOS.Add(gpo);
+                else
+                    result.GhostedGPOS.Add(gpo);
+            }
+
+            return result;
+        }
+
+        private static string RunCommand(string filename, string arguments) 
+        {
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo 
+                {
+                    FileName = filename,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false, 
+                    CreateNoWindow = true
+                }
+            };
+
+            proc.Start();
+            string output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit();
+            return output;
         }
     }
 }
