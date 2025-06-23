@@ -140,5 +140,15 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
+        static string GetGPODump() 
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(" ==== GPO RESULTS (USER SCOPE) ====");
+
+            try { }
+            catch (Exception ex) { }
+
+            return sb.ToString();
+        }
     }
 }
