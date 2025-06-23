@@ -12,13 +12,13 @@ namespace CitrixSessionDumper
     {
         static void Main(string[] args)
         {
-            int sessionId = ProcessSessionId();
+            int sessionId = CitrixInfoDump.ProcessSessionId();
 
-            string username = GetWTSString(WTS_INFO_CLASS.WTSUserName, sessionId);
-            string domain = GetWTSString(WTS_INFO_CLASS.WTSDomainName, sessionId);
+            string username = CitrixInfoDump.GetWTSString(CitrixInfoDump.WTS_INFO_CLASS.WTSUserName, sessionId);
+            string domain = CitrixInfoDump.GetWTSString(CitrixInfoDump.WTS_INFO_CLASS.WTSDomainName, sessionId);
             string machine = Environment.MachineName;
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            string clientIP = GetClientIP(sessionId);
+            string clientIP = CitrixInfoDump.GetClientIP(sessionId);
 
             string logPath = @"C:\Logs\CitrixSesdsionDump.txt";
             Directory.CreateDirectory(Path.GetDirectoryName(logPath));
@@ -26,9 +26,9 @@ namespace CitrixSessionDumper
             using (StreamWriter writer = new StreamWriter(logPath, true))
             {
                 writer.WriteLine($"==========={username}'s Info===========");
-                writer.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
-                writer.WriteLine(GetProcessAndSystemInfo());
-                writer.WriteLine(GetGPODump());
+                writer.WriteLine(CitrixInfoDump.GetSessionInfo(timestamp, username, domain, machine, clientIP));
+                writer.WriteLine(CitrixInfoDump.GetProcessAndSystemInfo());
+                writer.WriteLine(CitrixInfoDump.GetGPODump());
                 writer.WriteLine("======================");
                 writer.WriteLine();
             }

@@ -25,7 +25,7 @@ namespace CitrixSessionDumper
         static extern void WTSFreeMemory(IntPtr pMemory);
 
         // === Session Information Types ===
-        enum WTS_INFO_CLASS
+        public enum WTS_INFO_CLASS
         {
             WTSUserName = 5,
             WTSDomainName = 7,
@@ -42,12 +42,12 @@ namespace CitrixSessionDumper
             public byte[] Address;
         }
 
-        static int ProcessSessionId()
+        public static int ProcessSessionId()
         {
             return System.Diagnostics.Process.GetCurrentProcess().SessionId;
         }
 
-        static string GetWTSString(WTS_INFO_CLASS infoClass, int sessionId)
+        public static string GetWTSString(WTS_INFO_CLASS infoClass, int sessionId)
         {
             IntPtr buffer;
             int bytesReturned;
@@ -62,7 +62,7 @@ namespace CitrixSessionDumper
             return "Error";
         }
 
-        static string GetClientIP(int sessionId)
+        public static string GetClientIP(int sessionId)
         {
             IntPtr buffer;
             int bytesReturned;
@@ -84,7 +84,7 @@ namespace CitrixSessionDumper
             return "Error getting IP";
         }
 
-        static string GetProcessAndSystemInfo()
+        public static string GetProcessAndSystemInfo()
         {
             var proc = Process.GetCurrentProcess();
             long memory = proc.WorkingSet64;
@@ -99,7 +99,7 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
-        static string GetSessionInfo(string timestamp, string username, string domain, string machine, string clientIP)
+        public static string GetSessionInfo(string timestamp, string username, string domain, string machine, string clientIP)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("==== SESSION INFO ====");
@@ -111,7 +111,7 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
-        static string GetGPODump()
+        public static string GetGPODump()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(" ==== GPO RESULTS (USER SCOPE) ====");
@@ -168,5 +168,4 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
     }
-}
 }
