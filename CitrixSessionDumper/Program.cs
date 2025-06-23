@@ -53,11 +53,6 @@ namespace CitrixSessionDumper
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string clientIP = GetClientIP(sessionId);
 
-
-            //Console.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
-            //Console.WriteLine(GetProcessAndSystemInfo());
-            //Console.WriteLine(GetGPODump());
-
             string logPath = @"C:\Logs\CitrixSesdsionDump.txt";
             Directory.CreateDirectory(Path.GetDirectoryName(logPath));
 
