@@ -4,13 +4,14 @@ using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace CitrixSessionDumper
 {
     class Program
     {
 
-        // === Import WTS API 
+        // ==== WTS API IMPORTS ====
         [DllImport("Wtsapi32.dll")]
         static extern bool WTSQuerySessionInformation
         (
@@ -48,33 +49,26 @@ namespace CitrixSessionDumper
 
             string username = GetWTSString(WTS_INFO_CLASS.WTSUserName, sessionId);
             string domain = GetWTSString(WTS_INFO_CLASS.WTSDomainName, sessionId);
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string machine = Environment.MachineName;
-
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string clientIP = GetClientIP(sessionId);
 
-            Console.WriteLine("==== SESSION INFO ====");
-            Console.WriteLine($"Timestamp: {timestamp}");
-            Console.WriteLine($"Username: {username}");
-            Console.WriteLine($"Domain: {domain}");
-            Console.WriteLine($"Machine: {machine}");
-            Console.WriteLine($"Client IP: {clientIP}");
-            Console.WriteLine("======================");
+
+            Console.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
+            Console.WriteLine(GetProcessAndSystemInfo());
 
             string logPath = @"C:\Logs\CitrixSesdsionDump.txt";
             Directory.CreateDirectory(Path.GetDirectoryName(logPath));
 
             using (StreamWriter writer = new StreamWriter(logPath, true))
             {
-                writer.WriteLine("==== SESSION INFO ====");
-                writer.WriteLine($"Timestamp: {timestamp}");
-                writer.WriteLine($"Username: {username}");
-                writer.WriteLine($"Domain: {domain}");
-                writer.WriteLine($"Machine: {machine}");
-                writer.WriteLine($"Client IP: {clientIP}");
+                writer.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
+                writer.WriteLine(GetProcessAndSystemInfo());
                 writer.WriteLine("======================");
                 writer.WriteLine();
             }
+
+            Console.WriteLine("Session dump Complete");
         }
 
         static int ProcessSessionId()
@@ -117,6 +111,33 @@ namespace CitrixSessionDumper
             }
 
             return "Error getting IP";
+        }
+
+        static string GetProcessAndSystemInfo() 
+        {
+            var proc = Process.GetCurrentProcess();
+            long memory = proc.WorkingSet64;
+            TimeSpan uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("==== PROCESS & SYSTEM INFO ====");
+            sb.AppendLine($"Session PID: {proc.Id}");
+            sb.AppendLine($"Memory Usage: {memory / (1024 * 1024)} MB");
+            sb.AppendLine($"System Uptime: {uptime.Days}d {uptime.Hours}h {uptime.Minutes}m");
+
+            return sb.ToString();
+        }
+
+        static string GetSessionInfo(string timestamp, string username, string domain, string machine, string clientIP)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("==== SESSION INFO ====");
+            sb.AppendLine($"Timestamp: {timestamp}");
+            sb.AppendLine($"Username: {username}");
+            sb.AppendLine($"Domain: {domain}");
+            sb.AppendLine($"Machine: {machine}");
+            sb.AppendLine($"Client IP: {clientIP}");
+            return sb.ToString();
         }
 
     }
