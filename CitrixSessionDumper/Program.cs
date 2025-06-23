@@ -56,6 +56,7 @@ namespace CitrixSessionDumper
 
             Console.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
             Console.WriteLine(GetProcessAndSystemInfo());
+            Console.WriteLine(GetGPODump());
 
             string logPath = @"C:\Logs\CitrixSesdsionDump.txt";
             Directory.CreateDirectory(Path.GetDirectoryName(logPath));
@@ -64,6 +65,7 @@ namespace CitrixSessionDumper
             {
                 writer.WriteLine(GetSessionInfo(timestamp, username, domain, machine, clientIP));
                 writer.WriteLine(GetProcessAndSystemInfo());
+                writer.WriteLine(GetGPODump());
                 writer.WriteLine("======================");
                 writer.WriteLine();
             }
@@ -145,8 +147,54 @@ namespace CitrixSessionDumper
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(" ==== GPO RESULTS (USER SCOPE) ====");
 
-            try { }
-            catch (Exception ex) { }
+            try 
+            {
+                ProcessStartInfo psi = new ProcessStartInfo 
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c gpresult /scope:user /v",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process proc = Process.Start(psi)) 
+                {
+                    string output = proc.StandardOutput.ReadToEnd();
+                    proc.WaitForExit();
+
+                    // Filter only lines related to Citrix GPOs
+                    string[] keywords = 
+                    { 
+                        "Citrix", 
+                        "XenApp", 
+                        "XenDesktop", 
+                        "Virtual Apps", 
+                        "FSLogix", 
+                        "WEM", 
+                        "Loopback", 
+                        "Profile", 
+                        "Printers", 
+                        "Drives" 
+                    };
+
+                    foreach (string line in output.Split(new[] { Environment.NewLine }, StringSplitOptions.None)) 
+                    {
+                        foreach (string keyword in keywords)
+                        {
+                            if (line.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                sb.AppendLine(line.Trim());
+                                break; // Only add the line once for any keyword match
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) 
+            {
+                sb.AppendLine($"Error retrieving GPO info: {ex.Message}");
+            }
 
             return sb.ToString();
         }
