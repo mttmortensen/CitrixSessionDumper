@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -158,6 +159,51 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
+        public static string DetectPublishedApp(int sessionId)
+        {
+            try
+            {
+                // Find all wfica32.exe processes in our session
+                var wficaProcs = Process.GetProcessesByName("wfica32")
+                                        .Where(p => p.SessionId == sessionId);
+
+                foreach (var wfica in wficaProcs)
+                {
+                    // Query WMI for processes whose parent is this wfica32
+                    string query = $"SELECT Name, ProcessId FROM Win32_Process WHERE ParentProcessId = {wfica.Id}";
+                    var searcher = new ManagementObjectSearcher(query);
+                    var children = searcher.Get()
+                                           .Cast<ManagementObject>()
+                                           .Select(mo => new {
+                                               Name = mo["Name"]?.ToString(),
+                                               Id = Convert.ToInt32(mo["ProcessId"])
+                                           })
+                                           .ToList();
+
+                    // Pick the most recently-started child process if there are multiple
+                    Process best = null;
+                    foreach (var child in children)
+                    {
+                        try
+                        {
+                            var proc = Process.GetProcessById(child.Id);
+                            if (best == null || proc.StartTime > best.StartTime)
+                                best = proc;
+                        }
+                        catch { /* process may have exited */ }
+                    }
+
+                    if (best != null)
+                        return best.ProcessName;
+                }
+            }
+            catch
+            {
+                // fall-through to default
+            }
+
+            return "UnknownApp";
+        }
 
         public static string RunCommand(string fileName, string arguments)
         {

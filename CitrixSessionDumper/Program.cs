@@ -19,6 +19,8 @@ namespace CitrixSessionDumper
             string machine = Environment.MachineName;
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string clientIP = CitrixInfoDump.GetClientIP(sessionId);
+            string appName = CitrixInfoDump.DetectPublishedApp(sessionId);
+
 
             string logPath = @"C:\Logs\CitrixSesdsionDump.txt";
             Directory.CreateDirectory(Path.GetDirectoryName(logPath));
@@ -43,7 +45,7 @@ namespace CitrixSessionDumper
                     writer.WriteLine("  (none)");
                 }
 
-                writer.WriteLine(CitrixInfoDump.GetCitrixLogPaths(username));
+                writer.WriteLine(CitrixInfoDump.GetCitrixLogPaths(username, appName));
 
                 writer.WriteLine("======================");
                 writer.WriteLine();
