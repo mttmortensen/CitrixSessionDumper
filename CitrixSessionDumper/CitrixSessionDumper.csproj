@@ -13,4 +13,8 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.1" />
+  </ItemGroup>
+
 </Project>
