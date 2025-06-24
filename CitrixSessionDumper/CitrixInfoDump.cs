@@ -112,118 +112,65 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
-        public static string GetGPODump()
+        public static List<string> GetAppliedGPOs()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(" ==== GPO RESULTS (USER SCOPE) ====");
+            var applied = new List<string>();
 
-            try
+            // Run gpresult and split into lines
+            string gpResult = RunCommand("gpresult", "/scope:user /v");
+            var lines = gpResult.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+            bool inSection = false;
+            foreach (var raw in lines)
             {
-                ProcessStartInfo psi = new ProcessStartInfo
+                // Find start of the Applied GPOs section
+                if (!inSection)
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c gpresult /scope:user /v",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process proc = Process.Start(psi))
-                {
-                    string output = proc.StandardOutput.ReadToEnd();
-                    proc.WaitForExit();
-
-                    // Filter only lines related to Citrix GPOs
-                    string[] keywords =
+                    if (raw.Trim().StartsWith(
+                        "Applied Group Policy Objects",
+                        StringComparison.OrdinalIgnoreCase))
                     {
-                        "Citrix",
-                        "XenApp",
-                        "XenDesktop",
-                        "Virtual Apps",
-                        "FSLogix",
-                        "WEM",
-                        "Loopback",
-                        "Profile",
-                        "Printers",
-                        "Drives"
-                    };
-
-                    foreach (string line in output.Split(new[] { Environment.NewLine }, StringSplitOptions.None))
-                    {
-                        foreach (string keyword in keywords)
-                        {
-                            if (line.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                sb.AppendLine(line.Trim());
-                                break; // Only add the line once for any keyword match
-                            }
-                        }
+                        inSection = true;
                     }
+                    continue;
                 }
-            }
-            catch (Exception ex)
-            {
-                sb.AppendLine($"Error retrieving GPO info: {ex.Message}");
+
+                // Section ends when we hit a blank line or non-indented line
+                if (string.IsNullOrWhiteSpace(raw) || !char.IsWhiteSpace(raw, 0))
+                    break;
+
+                var name = raw.Trim();
+                if (name.Length > 0)
+                    applied.Add(name);
             }
 
-            return sb.ToString();
+            return applied;
         }
 
-        public static GPOGroupResult GetGPOGroupResults() 
+        public static string RunCommand(string fileName, string arguments)
         {
-            GPOGroupResult result = new GPOGroupResult();
-
-            // Step 1: Run gpresult and extract applied GPO names
-            string gpresult = RunCommand("gpresult", "/scope:user /v");
-            List<string> appliedGpos = new List<string>();
-            foreach (var line in gpresult.Split('\n')) 
+            var startInfo = new ProcessStartInfo
             {
-                if (line.Trim().StartsWith("Applied Group Policy Objects", StringComparison.OrdinalIgnoreCase))
-                    continue; 
-
-                if (line.Trim().StartsWith("    "))
-                    appliedGpos.Add(line.Trim());
-            }
-
-            // Step 2: Get Domain GPOs via PowerShell
-            HashSet<string> domainGops = new HashSet<string>();
-            using (PowerShell ps = PowerShell.Create()) 
-            {
-                ps.AddScript("Get-GPO -All | Select-Object -ExpandProperty DisplayName");
-                foreach (var gpo in ps.Invoke())
-                    domainGops.Add(gpo.ToString());
-            }
-
-            // Step 3: Compare and group them 
-            foreach (var gpo in appliedGpos) 
-            {
-                if (domainGops.Contains(gpo))
-                    result.ActiveGPOS.Add(gpo);
-                else
-                    result.GhostedGPOS.Add(gpo);
-            }
-
-            return result;
-        }
-
-        private static string RunCommand(string filename, string arguments) 
-        {
-            Process proc = new Process
-            {
-                StartInfo = new ProcessStartInfo 
-                {
-                    FileName = filename,
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false, 
-                    CreateNoWindow = true
-                }
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
 
-            proc.Start();
-            string output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit();
-            return output;
+            using (var process = new Process { StartInfo = startInfo })
+            {
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+
+                process.WaitForExit();
+
+                return string.IsNullOrWhiteSpace(error) ? output : $"ERROR:\n{error}";
+            }
         }
+
     }
 }
