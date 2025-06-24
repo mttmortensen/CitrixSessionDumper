@@ -3,94 +3,60 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace CitrixSessionDumper
 {
-    // Provides methods to enumerate Citrix-related log paths on both client and VDA sides.
+    // Provides methods to get user profile share paths and event log entries for a specified application.
     public static class CitrixLogPaths
     {
-        // Enumerates common client-side Citrix log directories and their contents.
-        public static string GetClientSideLogs() 
+        // Returns UNC paths for the user's profile on old and current Citrix farms.
+        public static string GetProfilePaths(string username)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
+            sb.AppendLine("==== PROFILE PATHS ====");
 
-            sb.AppendLine("-- Client-Side Citrix Log Directories --");
+            // Path for the legacy XenApp farm profiles
+            var oldFarmPath = $"\\4life.com\\shares\\Profiles\\UserProfiles\\{username}";
+            sb.AppendLine($"Old Farm Profile: {oldFarmPath}");
 
-            // Common local app-data paths for Citrix Recieve/Workspace logs
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var clientDirs = new[] 
-            {
-                Path.Combine(localAppData, "Citrix", "Receiver", "SelfServicePlugin", "Logs"),
-                Path.Combine(localAppData, "Citrix", "Workspace", "logs")
-            };
-
-            foreach (var dir in clientDirs)
-            {
-                sb.Append(dir);
-                if (Directory.Exists(dir)) 
-                {
-                    sb.AppendLine(" (found) ");
-                    foreach (var f in Directory.GetFiles(dir))
-                        sb.AppendLine($"   • {Path.GetFileName(f)}");
-                }
-                else 
-                {
-                    sb.AppendLine(" (not found) ");
-                }
-            }
+            // Path for the current CVAD farm profiles
+            var currentFarmPath = $"\\4life.com\\shares\\UserProfiles$\\{username}";
+            sb.AppendLine($"Current Farm Profile: {currentFarmPath}");
 
             return sb.ToString();
         }
 
-        // Enumerates common VDA-side Citrix log directories and their contents.
-        public static string GetVDASideLogs() 
+        // Retrieves Error and Warning entries from the Application log for the given source.
+        public static string GetEventViewerLogs(string source)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("-- VDA-side log directories (C:\\ProgramData\\Citrix\\*) --");
-
-            // ProgramData path typically holds service-specific log folders
-            string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string citrixPd = Path.Combine(programData, "Citrix");
-            if (Directory.Exists(citrixPd))
+            sb.AppendLine($"==== EVENT LOG ({source}) ERRORS & WARNINGS ====");
+            try
             {
-                foreach (var sub in Directory.GetDirectories(citrixPd))
+                using (var log = new EventLog("Application"))
                 {
-                    var logs = Path.Combine(sub, "Logs");
-                    sb.Append(logs);
-                    if (Directory.Exists(logs))
+                    var entries = log.Entries.Cast<EventLogEntry>()
+                        .Where(e => (e.EntryType == EventLogEntryType.Error || e.EntryType == EventLogEntryType.Warning)
+                                    && e.Source.Equals(source, StringComparison.OrdinalIgnoreCase));
+
+                    if (!entries.Any())
                     {
-                        sb.AppendLine(" (found)");
-                        foreach (var f in Directory.GetFiles(logs))
-                            sb.AppendLine($"   • {Path.GetFileName(f)}");
+                        sb.AppendLine("No entries found.");
                     }
                     else
                     {
-                        sb.AppendLine(" (not found)");
+                        foreach (var entry in entries)
+                            sb.AppendLine($"[{entry.TimeGenerated}] {entry.EntryType} - {entry.Message}");
                     }
                 }
             }
-            else
+            catch (Exception ex)
             {
-                sb.AppendLine($"{citrixPd} (not found)");
+                sb.AppendLine($"Error querying event log: {ex.Message}");
             }
 
-            sb.AppendLine();
-            sb.AppendLine("-- VDA-side temp logs (C:\\Windows\\Temp\\Citrix) --");
-
-            // Windows Temp Citrix folder for temmporary session logs
-            var tempCitrix = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp", "Citrix");
-            sb.Append(tempCitrix);
-            if(Directory.Exists(tempCitrix)) 
-            {
-                sb.AppendLine(" (found)");
-                foreach (var f in Directory.GetFiles(tempCitrix))
-                    sb.AppendLine($"   • {Path.GetFileName(f)}");
-            }
-            else 
-            {
-                sb.AppendLine(" (not found)");
-            }
-
+            sb.AppendLine("======================");
             return sb.ToString();
         }
     }
