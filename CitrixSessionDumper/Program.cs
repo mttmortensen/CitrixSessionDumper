@@ -43,6 +43,8 @@ namespace CitrixSessionDumper
                     writer.WriteLine("  (none)");
                 }
 
+                writer.WriteLine(CitrixInfoDump.GetCitrixLogPaths(username));
+
                 writer.WriteLine("======================");
                 writer.WriteLine();
 

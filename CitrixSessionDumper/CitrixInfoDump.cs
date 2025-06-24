@@ -147,6 +147,18 @@ namespace CitrixSessionDumper
             return applied;
         }
 
+        public static string GetCitrixLogPaths(string username, string applicationName)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("==== CITRIX PROFILE PATHS ====");
+            sb.Append(CitrixLogPaths.GetProfilePaths(username));
+            sb.AppendLine();
+            sb.AppendLine("==== CITRIX APP LOGS ====");
+            sb.Append(CitrixLogPaths.GetEventViewerLogs(applicationName));
+            return sb.ToString();
+        }
+
+
         public static string RunCommand(string fileName, string arguments)
         {
             var startInfo = new ProcessStartInfo
