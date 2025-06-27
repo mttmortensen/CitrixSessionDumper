@@ -113,21 +113,21 @@ namespace CitrixSessionDumper
             return sb.ToString();
         }
 
-        public static List<string> GetAppliedGPOs()
+        public static List<string> GetAppliedMachineGPOs()
         {
             var applied = new List<string>();
 
-            // Run gpresult and split into lines
-            string gpResult = RunCommand("gpresult", "/scope:user /v");
+            // Run gpresult against the computer (machine) scope
+            string gpResult = RunCommand("gpresult", "/scope:computer /v");
             var lines = gpResult.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
             bool inSection = false;
             foreach (var raw in lines)
             {
-                // Find start of the Applied GPOs section
+                // look for the “Applied Group Policy Objects” header
                 if (!inSection)
                 {
-                    if (raw.Trim().StartsWith(
+                    if (raw.TrimStart().StartsWith(
                         "Applied Group Policy Objects",
                         StringComparison.OrdinalIgnoreCase))
                     {
@@ -136,10 +136,11 @@ namespace CitrixSessionDumper
                     continue;
                 }
 
-                // Section ends when we hit a blank line or non-indented line
+                // end section on blank or non-indented line
                 if (string.IsNullOrWhiteSpace(raw) || !char.IsWhiteSpace(raw, 0))
                     break;
 
+                // collect the GPO name (trim leading whitespace)
                 var name = raw.Trim();
                 if (name.Length > 0)
                     applied.Add(name);
@@ -147,6 +148,7 @@ namespace CitrixSessionDumper
 
             return applied;
         }
+
 
         public static string GetCitrixLogPaths(string username)
         {

@@ -29,11 +29,8 @@ namespace CitrixSessionDumper
                 writer.WriteLine($"==========={username}'s Info===========");
                 writer.WriteLine(CitrixInfoDump.GetSessionInfo(timestamp, username, domain, machine, clientIP));
                 writer.WriteLine(CitrixInfoDump.GetProcessAndSystemInfo());
-
-                var gpoGroup = CitrixInfoDump.GetAppliedGPOs();
-
                 writer.WriteLine("==== APPLIED GPOs ====");
-                var gpos = CitrixInfoDump.GetAppliedGPOs();
+                var gpos = CitrixInfoDump.GetAppliedMachineGPOs();
                 if (gpos.Count > 0)
                 {
                     foreach (var gpo in gpos)
